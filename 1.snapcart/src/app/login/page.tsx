@@ -22,7 +22,7 @@ function Login() {
         setLoading(true)
 try {
    await signIn("credentials",{
-    email,password
+    email,password,callbackUrl:"/"
    }) 
   
    setLoading(false)
