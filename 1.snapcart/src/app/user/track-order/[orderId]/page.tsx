@@ -115,8 +115,8 @@
 //     return ()=>{
 //       socket.off("send-message")
 //     }
-    
-    
+
+
 //   }, [])
 
 //   const sendMsg = () => {
@@ -132,7 +132,7 @@
 //       })
 //     }
 //     socket.emit("send-message", message)
-   
+
 //     setNewMessage("")
 //   }
 //    useEffect(() => {
@@ -157,7 +157,7 @@
 //   const getSuggestion=async ()=>{
 //     setLoading(true)
 //     try {
-  
+
 //       const lastMessage=messages?.filter(m=>m.senderId.toString()!==userData?._id)?.at(-1)
 //       const result=await axios.post("/api/chat/ai-suggestions",{message:lastMessage?.text,role:"user"})
 //     setSuggestions(result.data)
@@ -167,7 +167,7 @@
 //       setLoading(false)
 //     }
 //   }
-  
+
 //   return (
 //     <div className='w-full min-h-screen bg-linear-to-b from-green-50 to-white'>
 //       <div className='max-w-2xl mx-auto pb-24'>
@@ -177,7 +177,7 @@
 // <h2 className='text-xl font-bold'>Track Order</h2>
 // <p className='text-sm text-gray-600'>order#{order?._id?.toString().slice(-6)} <span className='text-green-700 font-semibold'>{order?.status}</span></p>
 //               </div>
-              
+
 //             </div>
 //            <div className='px-4 mt-6 space-y-4'>
 //                <div className='rounded-3xl overflow-hidden border shadow'>
@@ -399,7 +399,7 @@ function TrackOrder() {
     socket.emit('join-room', orderId)
 
     const handleMessage = (message: IMessage) => {
-      if (message.roomId === orderId) {
+      if (message.roomId?.toString() === orderId) {
         setMessages((prev) => [...prev, message])
       }
     }
@@ -539,18 +539,16 @@ function TrackOrder() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className={`flex ${
-                      msg.senderId.toString() === userData?._id
+                    className={`flex ${msg.senderId.toString() === userData?._id
                         ? 'justify-end'
                         : 'justify-start'
-                    }`}
+                      }`}
                   >
                     <div
-                      className={`px-4 py-2 max-w-[75%] rounded-2xl shadow ${
-                        msg.senderId.toString() === userData?._id
+                      className={`px-4 py-2 max-w-[75%] rounded-2xl shadow ${msg.senderId.toString() === userData?._id
                           ? 'bg-green-600 text-white rounded-br-none'
                           : 'bg-gray-100 text-gray-800 rounded-bl-none'
-                      }`}
+                        }`}
                     >
                       <p>{msg.text}</p>
                       <p className='text-[10px] opacity-70 mt-1 text-right'>{msg.time}</p>

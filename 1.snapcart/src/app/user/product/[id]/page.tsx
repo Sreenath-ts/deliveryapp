@@ -20,7 +20,7 @@ async function ProductPage({ params }: PageProps) {
 
   if (user.role !== "user") redirect("/")
 
-  const product: IGrocery | null = await Grocery.findById(id).lean()
+  const product = await Grocery.findById(id).lean<IGrocery | null>()
   if (!product) redirect("/")
 
   const plainProduct = JSON.parse(JSON.stringify(product))
