@@ -11,6 +11,7 @@ export async function POST(req:NextRequest, context: { params: Promise<{ orderId
         await connectDb()
         const {orderId}=await context.params
         const {status}=await req.json()
+        console.log(`[Delivery] Updating order ${orderId} to status: ${status}`)
         const order=await Order.findById(orderId).populate("user")
         if(!order){
             return NextResponse.json(
@@ -21,16 +22,21 @@ export async function POST(req:NextRequest, context: { params: Promise<{ orderId
         order.status=status
         let deliveryBoysPayload:any=[]
         if(status==="out of delivery" && !order.assignment){
+            console.log(`[Delivery] Finding nearby delivery boys for order ${orderId}`)
             const {latitude,longitude}=order.address
+            console.log(`[Delivery] Order address: lat=${latitude}, lon=${longitude}`)
+            // Search within 50km radius (50000 meters)
             const nearByDeliveryBoys=await User.find({
                 role:"deliveryBoy",
                 location:{
                     $near:{
                         $geometry:{type:"Point",coordinates:[Number(longitude),Number(latitude)]},
-                        $maxDistance:10000
+                        $maxDistance:50000
                     }
                 }
             })
+            console.log(`[Delivery] Found ${nearByDeliveryBoys.length} nearby delivery boys`)
+            nearByDeliveryBoys.forEach(b => console.log(`[Delivery] - ${b.name}: socketId=${b.socketId}, location=${JSON.stringify(b.location?.coordinates)}`))
             const nearByIds=nearByDeliveryBoys.map((b)=>b._id)
             const busyIds=await DeliveryAssignment.find({
                 assignedTo:{$in:nearByIds},
@@ -42,11 +48,11 @@ export async function POST(req:NextRequest, context: { params: Promise<{ orderId
             )
              const candidates=availableDeliveryBoys.map(b=>b._id)
 
+             console.log(`[Delivery] Available candidates: ${candidates.length}`)
              if(candidates.length==0){
+                console.log(`[Delivery] No available delivery boys!`)
                 await order.save()
-            
                 await emitEventHandler("order-status-update",{orderId:order._id,status:order.status})
-
                 return NextResponse.json(
                 {message:"there is no available Delivery boys"},
                 {status:200}
@@ -60,10 +66,14 @@ export async function POST(req:NextRequest, context: { params: Promise<{ orderId
              })
 
              await deliveryAssignment.populate("order");
+             console.log(`[Delivery] Broadcasting assignment ${deliveryAssignment._id} to ${candidates.length} candidates`)
              for(const boyId of candidates){
                 const boy=await User.findById(boyId)
                 if(boy.socketId){
+                    console.log(`[Delivery] Sending to ${boy.name} via socket ${boy.socketId}`)
                     await emitEventHandler("new-assignment",deliveryAssignment,boy.socketId)
+                } else {
+                    console.log(`[Delivery] ${boy.name} has no socketId, skipping emit`)
                 }
              }
 

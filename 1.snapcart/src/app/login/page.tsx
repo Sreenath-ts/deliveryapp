@@ -93,7 +93,7 @@ try {
     })()
 }
 
-<div className='flex items-center gap-2 text-gray-400 text-sm mt-2'>
+{/* <div className='flex items-center gap-2 text-gray-400 text-sm mt-2'>
     <span className='flex-1 h-px bg-gray-200'></span>
     OR
     <span className='flex-1 h-px bg-gray-200'></span>
@@ -102,7 +102,7 @@ try {
 <div className='w-full flex items-center justify-center gap-3 border border-gray-300 hover:bg-gray-50 py-3 rounded-xl text-gray-700 font-medium transition-all duration-200' onClick={()=>signIn("google",{callbackUrl:"/"})}>
     <Image src={googleImage} width={20} height={20} alt='google'/>
     Continue with Google
-</div>
+</div> */}
  
        </motion.form>
 

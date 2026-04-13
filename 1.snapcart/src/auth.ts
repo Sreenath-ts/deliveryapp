@@ -22,6 +22,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             if(!user){
                 throw new Error("user does not exist")
             }
+            if(!user.password){
+                throw new Error("please login with google")
+            }
             const isMatch=await bcrypt.compare(password,user.password)
             if(!isMatch){
                 throw new Error("incorrect password")
