@@ -19,7 +19,7 @@
 // io.on("connection",(socket)=>{
 
 //    socket.on("identity",async (userId)=>{
-    
+
 //     await axios.post(`${process.env.NEXT_BASE_URL}/api/socket/connect`,{userId,socketId:socket.id})
 //    }) 
 
@@ -42,7 +42,7 @@
 //     await axios.post(`${process.env.NEXT_BASE_URL}/api/chat/save`,message)
 //     io.to(message.roomId).emit("send-message",message)
 //   })
-  
+
 //     socket.on("disconnect",()=>{
 // console.log("user disconnected",socket.id)
 //     })
@@ -88,7 +88,7 @@ console.log("PORT =", process.env.PORT)
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: process.env.NEXT_BASE_URL,
     methods: ["GET", "POST"],
     credentials: true
   }
