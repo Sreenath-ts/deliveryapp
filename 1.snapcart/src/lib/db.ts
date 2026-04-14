@@ -6,6 +6,7 @@ if(!mongodbUrl){
  throw new Error("db error")
 }
 
+import "@/models/index"
 
 
 let cached=global.mongoose
