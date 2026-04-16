@@ -1,5 +1,5 @@
 'use client'
-import { Boxes, ClipboardCheck, Cross, LogOut, Menu, Package, Plus, PlusCircle, Search, ShoppingCartIcon, User, X, Image as ImageIcon } from 'lucide-react'
+import { Boxes, ClipboardCheck, Cross, LogOut, Menu, Package, Plus, PlusCircle, Search, ShoppingCartIcon, User, X, Image as ImageIcon, Tag } from 'lucide-react'
 
 import Link from 'next/link'
 import React, { FormEvent, useEffect, useRef, useState } from 'react'
@@ -9,7 +9,7 @@ import { signOut } from 'next-auth/react'
 import { createPortal } from 'react-dom'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/redux/store'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 interface IUser {
     _id?: string
@@ -28,6 +28,13 @@ function Nav({ user }: { user: IUser }) {
     const { cartData } = useSelector((state: RootState) => state.cart)
     const [search, setSearch] = useState("")
     const router = useRouter()
+    const searchParams = useSearchParams()
+
+    // Keep the search input in sync with the ?q= URL param
+    useEffect(() => {
+        const q = searchParams.get('q')
+        setSearch(q ?? "")
+    }, [searchParams])
     
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
@@ -45,9 +52,13 @@ function Nav({ user }: { user: IUser }) {
         if (!query) {
             return router.push("/")
         }
-
         router.push(`/?q=${encodeURIComponent(query)}`)
+        setSearchBarOpen(false)
+    }
+
+    const clearSearch = () => {
         setSearch("")
+        router.push("/")
         setSearchBarOpen(false)
     }
 
@@ -101,12 +112,19 @@ function Nav({ user }: { user: IUser }) {
                     >
                         <ClipboardCheck className='w-5 h-5' /> Manage Orders
                     </Link>
-                    <Link 
-                        href={"/admin/manage-banners"} 
+                    <Link
+                        href={"/admin/manage-banners"}
                         className='flex items-center gap-3 p-3 rounded-lg bg-white/10 hover:bg-white/20 hover:pl-4 transition-all'
                         onClick={() => setMenuOpen(false)}
                     >
                         <ImageIcon className='w-5 h-5' /> Manage Banners
+                    </Link>
+                    <Link
+                        href={"/admin/manage-categories"}
+                        className='flex items-center gap-3 p-3 rounded-lg bg-white/10 hover:bg-white/20 hover:pl-4 transition-all'
+                        onClick={() => setMenuOpen(false)}
+                    >
+                        <Tag className='w-5 h-5' /> Manage Categories
                     </Link>
                 </div>
                 <div className='my-5 border-t border-white/20'></div>
@@ -127,12 +145,24 @@ function Nav({ user }: { user: IUser }) {
                 Snapcart
             </Link>
             {user.role == "user" && <form className='hidden md:flex items-center bg-white rounded-full px-4 py-2 w-1/2 max-w-lg shadow-md' onSubmit={handleSearch}>
-                <Search className='text-gray-500 w-5 h-5 mr-2' />
-                <input type="text" placeholder='Search groceries...' className='w-full outline-none text-gray-700 placeholder-gray-400'
+                <Search className='text-gray-500 w-5 h-5 mr-2 flex-shrink-0' />
+                <input
+                    type="text"
+                    placeholder='Search groceries...'
+                    className='w-full outline-none text-gray-700 placeholder-gray-400'
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-
                 />
+                {search && (
+                    <button
+                        type="button"
+                        onClick={clearSearch}
+                        className='flex-shrink-0 ml-1 w-6 h-6 flex items-center justify-center rounded-full bg-gray-200 hover:bg-red-100 hover:text-red-600 text-gray-500 transition-all'
+                        aria-label="Clear search"
+                    >
+                        <X className='w-3.5 h-3.5' />
+                    </button>
+                )}
             </form>}
 
 
@@ -162,6 +192,9 @@ function Nav({ user }: { user: IUser }) {
                         </Link>
                         <Link href={"/admin/manage-banners"} className='flex items-center gap-2 bg-white text-green-700 font-semibold px-4 py-2 rounded-full hover:bg-green-100 transition-all shadow-md'>
                             <ImageIcon className='w-4 h-4' /> Banners
+                        </Link>
+                        <Link href={"/admin/manage-categories"} className='flex items-center gap-2 bg-white text-green-700 font-semibold px-4 py-2 rounded-full hover:bg-green-100 transition-all shadow-md'>
+                            <Tag className='w-4 h-4' /> Categories
                         </Link>
                     </div>
                     <div className='lg:hidden bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-md hover:scale-105 transition cursor-pointer' onClick={() => setMenuOpen(prev => !prev)}>
@@ -221,14 +254,31 @@ function Nav({ user }: { user: IUser }) {
                                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
                                 className='fixed top-24 left-1/2 -translate-x-1/2 w-[90%] bg-white rounded-full shadow-lg z-40 flex items-center px-4 py-2'
                             >
-                                <Search className='text-gray-500 w-5 h-5 mr-2' />
+                                <Search className='text-gray-500 w-5 h-5 mr-2 flex-shrink-0' />
                                 <form className='grow' onSubmit={handleSearch}>
-                                    <input type="text" className='w-full outline-none text-gray-700' placeholder='search groceries...' value={search}
-                                        onChange={(e) => setSearch(e.target.value)} />
+                                    <input
+                                        type="text"
+                                        className='w-full outline-none text-gray-700'
+                                        placeholder='Search groceries...'
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                        autoFocus
+                                    />
                                 </form>
-                                <button onClick={() => setSearchBarOpen(false)}>
-                                    <X className='text-gray-500 w-5 h-5' />
-                                </button>
+                                {search ? (
+                                    <button
+                                        type="button"
+                                        onClick={clearSearch}
+                                        className='flex-shrink-0 ml-1 w-7 h-7 flex items-center justify-center rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-all'
+                                        aria-label="Clear search"
+                                    >
+                                        <X className='w-4 h-4' />
+                                    </button>
+                                ) : (
+                                    <button type="button" onClick={() => setSearchBarOpen(false)} className='flex-shrink-0 ml-1'>
+                                        <X className='text-gray-500 w-5 h-5' />
+                                    </button>
+                                )}
                             </motion.div>
                         }
                     </AnimatePresence>

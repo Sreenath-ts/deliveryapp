@@ -4,4 +4,5 @@ import "@/models/user.model";
 import "@/models/deliveryAssignment.model";
 import '@/models/banner.model';
 import "@/models/grocery.model";
-import "@/models/message.model"
+import "@/models/message.model";
+import "@/models/category.model";

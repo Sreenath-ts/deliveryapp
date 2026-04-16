@@ -1,11 +1,13 @@
-import React from 'react'
+import React, { Suspense } from 'react'
 import HeroSection from './HeroSection'
 import CategorySlider from './CategorySlider'
+import AutoScrollToProducts from './AutoScrollToProducts'
+import ActiveFilters from './ActiveFilters'
 import { IGrocery } from '@/models/grocery.model'
 import GroceryItemCard from './GroceryItemCard'
 import { Sparkles, Package } from 'lucide-react'
 
-async function UserDashboard({ groceryList }: { groceryList: IGrocery[] }) {
+async function UserDashboard({ groceryList, selectedCategory, searchQuery }: { groceryList: IGrocery[], selectedCategory?: string | null, searchQuery?: string | null }) {
     const plainGrocery = JSON.parse(JSON.stringify(groceryList))
 
     return (
@@ -14,7 +16,12 @@ async function UserDashboard({ groceryList }: { groceryList: IGrocery[] }) {
           <HeroSection targetId="products-section" />
 
             {/* Category Slider */}
-            <CategorySlider />
+            <CategorySlider selectedCategory={selectedCategory} />
+
+            {/* Auto-scroll when a category/search filter is active */}
+            <Suspense fallback={null}>
+                <AutoScrollToProducts />
+            </Suspense>
 
             {/* Products Section */}
             <div
@@ -32,9 +39,15 @@ async function UserDashboard({ groceryList }: { groceryList: IGrocery[] }) {
                     <div className='flex items-center justify-between'>
                         <div>
                             <h2 className='text-3xl md:text-4xl font-bold text-gray-800 mb-2'>
-                                Popular Grocery Items
+                                {selectedCategory ? selectedCategory : searchQuery ? `Results for "${searchQuery}"` : 'Popular Grocery Items'}
                             </h2>
-                            <p className='text-gray-600'>Hand-picked fresh produce delivered to your door</p>
+                            <p className='text-gray-600'>
+                                {selectedCategory
+                                    ? 'Showing all products in this category'
+                                    : searchQuery
+                                        ? 'Showing matching grocery items'
+                                        : 'Hand-picked fresh produce delivered to your door'}
+                            </p>
                         </div>
                         <div className='hidden md:flex items-center gap-2 bg-green-50 px-4 py-2 rounded-full'>
                             <Package className='w-5 h-5 text-green-600' />
@@ -43,6 +56,9 @@ async function UserDashboard({ groceryList }: { groceryList: IGrocery[] }) {
                             </span>
                         </div>
                     </div>
+
+                    {/* Active filter badges — tap to clear */}
+                    <ActiveFilters category={selectedCategory} searchQuery={searchQuery} />
                 </div>
 
                 {/* Products Grid */}

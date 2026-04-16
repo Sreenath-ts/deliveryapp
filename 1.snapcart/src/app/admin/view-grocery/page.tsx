@@ -1,6 +1,6 @@
 'use client'
 import axios from 'axios'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from "motion/react"
 import { ArrowLeft, Download, FileSpreadsheet, Loader, Package, Pencil, Search, ShoppingCart, Upload, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -29,24 +29,13 @@ interface IOrder {
     };
     createdAt: string;
 }
-const categories = [
-    "Fruits & Vegetables",
-    "Dairy & Eggs",
-    "Rice, Atta & Grains",
-    "Snacks & Biscuits",
-    "Spices & Masalas",
-    "Beverages & Drinks",
-    "Personal Care",
-    "Household Essentials",
-    "Instant & Packaged Food",
-    "Baby & Pet Care"
-]
 const units = [
     "kg", "g", "liter", "ml", "piece", "pack"
 ]
 function ViewGrocery() {
     const router = useRouter()
     const [groceries, setGroceries] = useState<IGrocery[]>()
+    const [categories, setCategories] = useState<string[]>([])
     const [search,setSearch]=useState("")
     const [editing, setEditing] = useState<IGrocery | null>(null)
     const [imagePreview,setImagePreview]=useState<string | null>(null)
@@ -68,6 +57,9 @@ function ViewGrocery() {
             }
         }
         getGroceries()
+        axios.get('/api/admin/get-categories')
+            .then(res => setCategories(res.data.map((c: any) => c.name)))
+            .catch(() => {})
     }, [])
 
     useEffect(()=>{

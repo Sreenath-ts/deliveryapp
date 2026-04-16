@@ -1,23 +1,10 @@
 'use client'
 import { ArrowLeft, Loader, Plus, PlusCircle, Upload, CheckCircle, XCircle, X } from 'lucide-react'
 import Link from 'next/link'
-import React, { ChangeEvent, FormEvent, useState } from 'react'
+import React, { ChangeEvent, FormEvent, useEffect, useState } from 'react'
 import { motion, AnimatePresence } from "motion/react"
 import Image from 'next/image'
 import axios from 'axios'
-
-const categories = [
-    "Fruits & Vegetables",
-    "Dairy & Eggs",
-    "Rice, Atta & Grains",
-    "Snacks & Biscuits",
-    "Spices & Masalas",
-    "Beverages & Drinks",
-    "Personal Care",
-    "Household Essentials",
-    "Instant & Packaged Food",
-    "Baby & Pet Care"
-]
 
 const units = [
     "kg", "g", "liter", "ml", "piece", "pack"
@@ -28,6 +15,7 @@ type ModalType = 'success' | 'error' | null
 function AddGrocery() {
     const [name, setName] = useState("")
     const [category, setCategory] = useState("")
+    const [categories, setCategories] = useState<string[]>([])
     const [unit, setUnit] = useState("")
     const [price, setPrice] = useState("")
     const [offerPrice, setOfferPrice] = useState("")
@@ -36,6 +24,12 @@ function AddGrocery() {
     const [backendImage, setBackendImage] = useState<File | null>()
     const [modalType, setModalType] = useState<ModalType>(null)
     const [modalMessage, setModalMessage] = useState("")
+
+    useEffect(() => {
+        axios.get('/api/admin/get-categories')
+            .then(res => setCategories(res.data.map((c: any) => c.name)))
+            .catch(() => {})
+    }, [])
 
     const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files
