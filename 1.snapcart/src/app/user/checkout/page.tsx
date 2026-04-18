@@ -20,8 +20,9 @@ import {
     CheckCircle
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useSelector } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { RootState } from '@/redux/store'
+import { clearCart } from '@/redux/cartSlice'
 import axios from 'axios'
 import dynamic from 'next/dynamic'
 
@@ -35,6 +36,7 @@ declare global {
 
 function Checkout() {
     const router = useRouter()
+    const dispatch = useDispatch()
     const { userData } = useSelector((state: RootState) => state.user)
     const { subTotal, deliveryFee, finalTotal, cartData } = useSelector((state: RootState) => state.cart)
 
@@ -311,6 +313,7 @@ function Checkout() {
                 paymentMethod
             })
 
+            dispatch(clearCart())
             router.push("/user/my-orders")
         } catch (error) {
             console.log(error)
@@ -469,6 +472,7 @@ const options = {
                 razorpay_signature: response.razorpay_signature,
             })
 
+            dispatch(clearCart())
             router.push("/user/my-orders")
         } catch (error) {
             console.log(error)

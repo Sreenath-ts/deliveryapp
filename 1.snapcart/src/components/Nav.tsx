@@ -2,7 +2,7 @@
 import { Boxes, ClipboardCheck, Cross, LogOut, Menu, Package, Plus, PlusCircle, Search, ShoppingCartIcon, User, X, Image as ImageIcon, Tag } from 'lucide-react'
 
 import Link from 'next/link'
-import React, { FormEvent, useEffect, useRef, useState } from 'react'
+import React, { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import { AnimatePresence, motion } from 'motion/react'
 import { signOut } from 'next-auth/react'
@@ -27,6 +27,10 @@ function Nav({ user }: { user: IUser }) {
     const [menuOpen, setMenuOpen] = useState(false)
     const { cartData } = useSelector((state: RootState) => state.cart)
     const [search, setSearch] = useState("")
+    const [showSuggestions, setShowSuggestions] = useState(false)
+    const [groceries, setGroceries] = useState<{ name: string; category: string }[]>([])
+    const searchContainerRef = useRef<HTMLDivElement>(null)
+    const mobileSearchContainerRef = useRef<HTMLDivElement>(null)
     const router = useRouter()
     const searchParams = useSearchParams()
 
@@ -35,20 +39,60 @@ function Nav({ user }: { user: IUser }) {
         const q = searchParams.get('q')
         setSearch(q ?? "")
     }, [searchParams])
-    
+
+    // Fetch groceries once for suggestions (user role only)
+    useEffect(() => {
+        if (user.role !== 'user') return
+        fetch('/api/admin/get-groceries')
+            .then(r => r.json())
+            .then(data => setGroceries(Array.isArray(data) ? data : []))
+            .catch(() => {})
+    }, [user.role])
+
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (profileDropDown.current && !profileDropDown.current.contains(e.target as Node)) {
                 setOpen(false)
             }
+            // Close suggestions when clicking outside both search containers
+            const target = e.target as Node
+            const inDesktop = searchContainerRef.current?.contains(target)
+            const inMobile = mobileSearchContainerRef.current?.contains(target)
+            if (!inDesktop && !inMobile) setShowSuggestions(false)
+        }
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setShowSuggestions(false)
         }
         document.addEventListener("mousedown", handleClickOutside)
-        return () => document.removeEventListener("mousedown", handleClickOutside)
+        document.addEventListener("keydown", handleKeyDown)
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside)
+            document.removeEventListener("keydown", handleKeyDown)
+        }
     }, [])
+
+    const filteredSuggestions = useMemo(() => {
+        if (!search.trim()) return []
+        const q = search.toLowerCase()
+        const seen = new Set<string>()
+        const results: string[] = []
+        for (const g of groceries) {
+            if (results.length >= 6) break
+            if (g.name.toLowerCase().includes(q) && !seen.has(g.name)) {
+                seen.add(g.name)
+                results.push(g.name)
+            } else if (g.category.toLowerCase().includes(q) && !seen.has(g.category)) {
+                seen.add(g.category)
+                results.push(g.category)
+            }
+        }
+        return results
+    }, [search, groceries])
 
     const handleSearch = (e: FormEvent) => {
         e.preventDefault()
         const query = search.trim()
+        setShowSuggestions(false)
         if (!query) {
             return router.push("/")
         }
@@ -56,8 +100,16 @@ function Nav({ user }: { user: IUser }) {
         setSearchBarOpen(false)
     }
 
+    const handleSuggestionClick = (value: string) => {
+        setSearch(value)
+        setShowSuggestions(false)
+        router.push(`/?q=${encodeURIComponent(value)}`)
+        setSearchBarOpen(false)
+    }
+
     const clearSearch = () => {
         setSearch("")
+        setShowSuggestions(false)
         router.push("/")
         setSearchBarOpen(false)
     }
@@ -144,26 +196,47 @@ function Nav({ user }: { user: IUser }) {
             <Link href={"/"} className='text-white font-extrabold text-2xl sm:text-3xl tracking-wide hover:scale-105 transition-transform'>
                 Snapcart
             </Link>
-            {user.role == "user" && <form className='hidden md:flex items-center bg-white rounded-full px-4 py-2 w-1/2 max-w-lg shadow-md' onSubmit={handleSearch}>
-                <Search className='text-gray-500 w-5 h-5 mr-2 flex-shrink-0' />
-                <input
-                    type="text"
-                    placeholder='Search groceries...'
-                    className='w-full outline-none text-gray-700 placeholder-gray-400'
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                />
-                {search && (
-                    <button
-                        type="button"
-                        onClick={clearSearch}
-                        className='flex-shrink-0 ml-1 w-6 h-6 flex items-center justify-center rounded-full bg-gray-200 hover:bg-red-100 hover:text-red-600 text-gray-500 transition-all'
-                        aria-label="Clear search"
-                    >
-                        <X className='w-3.5 h-3.5' />
-                    </button>
-                )}
-            </form>}
+            {user.role == "user" && (
+                <div ref={searchContainerRef} className='hidden md:block relative w-1/2 max-w-lg'>
+                    <form className='flex items-center bg-white rounded-full px-4 py-2 shadow-md' onSubmit={handleSearch}>
+                        <Search className='text-gray-500 w-5 h-5 mr-2 flex-shrink-0' />
+                        <input
+                            type="text"
+                            placeholder='Search groceries...'
+                            className='w-full outline-none text-gray-700 placeholder-gray-400'
+                            value={search}
+                            onChange={(e) => { setSearch(e.target.value); setShowSuggestions(true) }}
+                            onFocus={() => { if (search.trim()) setShowSuggestions(true) }}
+                        />
+                        {search && (
+                            <button
+                                type="button"
+                                onClick={clearSearch}
+                                className='flex-shrink-0 ml-1 w-6 h-6 flex items-center justify-center rounded-full bg-gray-200 hover:bg-red-100 hover:text-red-600 text-gray-500 transition-all'
+                                aria-label="Clear search"
+                            >
+                                <X className='w-3.5 h-3.5' />
+                            </button>
+                        )}
+                    </form>
+                    {showSuggestions && filteredSuggestions.length > 0 && (
+                        <div className='absolute top-full mt-2 left-0 right-0 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50'>
+                            {filteredSuggestions.map((s, i) => (
+                                <button
+                                    key={i}
+                                    type='button'
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    onClick={() => handleSuggestionClick(s)}
+                                    className='flex items-center gap-3 w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors'
+                                >
+                                    <Search className='w-3.5 h-3.5 text-gray-400 flex-shrink-0' />
+                                    {s}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
 
 
             <div className='flex items-center gap-3 md:gap-6 relative'>
@@ -245,42 +318,61 @@ function Nav({ user }: { user: IUser }) {
                     </AnimatePresence>
 
                     <AnimatePresence>
-                        {searchBarOpen
-                            &&
+                        {searchBarOpen && (
                             <motion.div
+                                ref={mobileSearchContainerRef}
                                 initial={{ opacity: 0, y: -10, scale: 0.95 }}
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 transition={{ duration: 0.4 }}
                                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                                className='fixed top-24 left-1/2 -translate-x-1/2 w-[90%] bg-white rounded-full shadow-lg z-40 flex items-center px-4 py-2'
+                                className={`fixed top-24 left-1/2 -translate-x-1/2 w-[90%] bg-white shadow-lg z-40 overflow-hidden ${showSuggestions && filteredSuggestions.length > 0 ? 'rounded-2xl' : 'rounded-full'}`}
                             >
-                                <Search className='text-gray-500 w-5 h-5 mr-2 flex-shrink-0' />
-                                <form className='grow' onSubmit={handleSearch}>
-                                    <input
-                                        type="text"
-                                        className='w-full outline-none text-gray-700'
-                                        placeholder='Search groceries...'
-                                        value={search}
-                                        onChange={(e) => setSearch(e.target.value)}
-                                        autoFocus
-                                    />
-                                </form>
-                                {search ? (
-                                    <button
-                                        type="button"
-                                        onClick={clearSearch}
-                                        className='flex-shrink-0 ml-1 w-7 h-7 flex items-center justify-center rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-all'
-                                        aria-label="Clear search"
-                                    >
-                                        <X className='w-4 h-4' />
-                                    </button>
-                                ) : (
-                                    <button type="button" onClick={() => setSearchBarOpen(false)} className='flex-shrink-0 ml-1'>
-                                        <X className='text-gray-500 w-5 h-5' />
-                                    </button>
+                                <div className='flex items-center px-4 py-2'>
+                                    <Search className='text-gray-500 w-5 h-5 mr-2 flex-shrink-0' />
+                                    <form className='grow' onSubmit={handleSearch}>
+                                        <input
+                                            type="text"
+                                            className='w-full outline-none text-gray-700'
+                                            placeholder='Search groceries...'
+                                            value={search}
+                                            onChange={(e) => { setSearch(e.target.value); setShowSuggestions(true) }}
+                                            onFocus={() => { if (search.trim()) setShowSuggestions(true) }}
+                                            autoFocus
+                                        />
+                                    </form>
+                                    {search ? (
+                                        <button
+                                            type="button"
+                                            onClick={clearSearch}
+                                            className='flex-shrink-0 ml-1 w-7 h-7 flex items-center justify-center rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-all'
+                                            aria-label="Clear search"
+                                        >
+                                            <X className='w-4 h-4' />
+                                        </button>
+                                    ) : (
+                                        <button type="button" onClick={() => setSearchBarOpen(false)} className='flex-shrink-0 ml-1'>
+                                            <X className='text-gray-500 w-5 h-5' />
+                                        </button>
+                                    )}
+                                </div>
+                                {showSuggestions && filteredSuggestions.length > 0 && (
+                                    <div className='border-t border-gray-100'>
+                                        {filteredSuggestions.map((s, i) => (
+                                            <button
+                                                key={i}
+                                                type='button'
+                                                onMouseDown={(e) => e.preventDefault()}
+                                                onClick={() => handleSuggestionClick(s)}
+                                                className='flex items-center gap-3 w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors'
+                                            >
+                                                <Search className='w-3.5 h-3.5 text-gray-400 flex-shrink-0' />
+                                                {s}
+                                            </button>
+                                        ))}
+                                    </div>
                                 )}
                             </motion.div>
-                        }
+                        )}
                     </AnimatePresence>
 
 
