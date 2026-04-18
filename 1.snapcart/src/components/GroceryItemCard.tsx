@@ -89,7 +89,7 @@ function GroceryItemCard({ item }: { item: IGrocery }) {
                         className='bg-white text-gray-900 px-5 py-2.5 rounded-2xl text-sm font-bold flex items-center gap-2 shadow-xl hover:bg-green-500 hover:text-white transition-all duration-300'
                     >
                         <Eye size={16} />
-                        Quick View
+                        
                     </motion.button>
                 </motion.div>
             </div>
