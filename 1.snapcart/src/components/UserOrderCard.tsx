@@ -3,12 +3,41 @@
 import React, { useEffect, useState } from 'react'
 import { motion } from "motion/react"
 import { ChevronDown, ChevronUp, CreditCard, MapPin, Package, Truck, UserCheck } from 'lucide-react'
-import { div } from 'motion/react-client'
 import Image from 'next/image'
 import { getSocket } from '@/lib/socket'
-import mongoose from 'mongoose'
 import { IUser } from '@/models/user.model'
 import { useRouter } from 'next/navigation'
+
+function playNotificationSound() {
+    try {
+        const ctx = new AudioContext()
+        const gain1 = ctx.createGain()
+        gain1.gain.setValueAtTime(0.3, ctx.currentTime)
+        gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8)
+        gain1.connect(ctx.destination)
+        const osc1 = ctx.createOscillator()
+        osc1.type = 'sine'
+        osc1.frequency.setValueAtTime(880, ctx.currentTime)
+        osc1.connect(gain1)
+        osc1.start(ctx.currentTime)
+        osc1.stop(ctx.currentTime + 0.2)
+
+        const gain2 = ctx.createGain()
+        gain2.gain.setValueAtTime(0.3, ctx.currentTime + 0.2)
+        gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.0)
+        gain2.connect(ctx.destination)
+        const osc2 = ctx.createOscillator()
+        osc2.type = 'sine'
+        osc2.frequency.setValueAtTime(660, ctx.currentTime + 0.2)
+        osc2.connect(gain2)
+        osc2.start(ctx.currentTime + 0.2)
+        osc2.stop(ctx.currentTime + 0.55)
+
+        setTimeout(() => ctx.close(), 1200)
+    } catch {
+        // AudioContext not available
+    }
+}
 interface IOrder {
     _id?: string
     user:string
@@ -45,7 +74,14 @@ interface IOrder {
 function UserOrderCard({ order }: { order: IOrder }) {
     const [expanded, setExpanded] = useState(false)
     const [status,setStatus]=useState(order.status)
+    const [otpAlert, setOtpAlert] = useState(false)
     const router=useRouter()
+
+    useEffect(() => {
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission()
+        }
+    }, [])
     const getStatusColor = (status: string) => {
         switch (status) {
             case "pending":
@@ -66,9 +102,59 @@ socket.on("order-status-update",(data)=>{
         setStatus(data.status)
     }
 })
-return ()=>socket.off("order-status-update")
+socket.on("otp-requested", (data) => {
+    if (data.orderId.toString() === order?._id!.toString()) {
+        playNotificationSound()
+
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+            new Notification('Delivery Arrived!', {
+                body: 'Share the OTP from your email with the delivery person.',
+                icon: '/favicon.ico',
+            })
+        }
+
+        setOtpAlert(true)
+        setTimeout(() => setOtpAlert(false), 10000)
+    }
+})
+return ()=>{
+    socket.off("order-status-update")
+    socket.off("otp-requested")
+}
     },[])
     return (
+        <>
+        {otpAlert && (
+            <div className='fixed top-4 right-4 z-[9999] max-w-sm w-full'>
+                <motion.div
+                    initial={{ opacity: 0, x: 80, scale: 0.95 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    exit={{ opacity: 0, x: 80 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+                    className='bg-white border-2 border-blue-200 rounded-2xl shadow-2xl overflow-hidden'
+                >
+                    <motion.div
+                        className='h-1 bg-blue-500 origin-left'
+                        initial={{ scaleX: 1 }}
+                        animate={{ scaleX: 0 }}
+                        transition={{ duration: 10, ease: 'linear' }}
+                    />
+                    <div className='flex items-start gap-3 p-4'>
+                        <div className='text-2xl flex-shrink-0'>🚚</div>
+                        <div className='flex-1 min-w-0'>
+                            <p className='font-bold text-gray-800 text-sm'>Your delivery has arrived!</p>
+                            <p className='text-gray-500 text-xs mt-0.5'>Check your email for the OTP and share it with the delivery person.</p>
+                        </div>
+                        <button
+                            onClick={() => setOtpAlert(false)}
+                            className='text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100 flex-shrink-0 text-lg leading-none'
+                        >
+                            ×
+                        </button>
+                    </div>
+                </motion.div>
+            </div>
+        )}
         <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
@@ -190,6 +276,7 @@ return ()=>socket.off("order-status-update")
            
 
         </motion.div>
+        </>
     )
 }
 

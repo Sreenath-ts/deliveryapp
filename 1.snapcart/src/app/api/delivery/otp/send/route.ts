@@ -1,4 +1,5 @@
 import connectDb from "@/lib/db";
+import emitEventHandler from "@/lib/emitEventHandler";
 import { sendMail } from "@/lib/mailer";
 import Order from "@/models/order.model";
 import { NextRequest, NextResponse } from "next/server";
@@ -24,6 +25,11 @@ export async function POST(req:NextRequest) {
         "Your Delivery OTP",
         `<h2>Your Delivery OTP is <strong>${otp}</strong></h2>`
     )
+
+       if (order.user.socketId) {
+           await emitEventHandler("otp-requested", { orderId: order._id }, order.user.socketId)
+       }
+
      return NextResponse.json(
             {message:"otp sent successfully"},
             {status:200}
