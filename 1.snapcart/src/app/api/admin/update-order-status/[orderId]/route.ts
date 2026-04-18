@@ -3,7 +3,6 @@ import emitEventHandler from "@/lib/emitEventHandler";
 import DeliveryAssignment from "@/models/deliveryAssignment.model";
 import Order from "@/models/order.model";
 import User from "@/models/user.model";
-import { stat } from "fs";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req:NextRequest, context: { params: Promise<{ orderId: string; }>; }) {
@@ -51,12 +50,11 @@ export async function POST(req:NextRequest, context: { params: Promise<{ orderId
              console.log(`[Delivery] Available candidates: ${candidates.length}`)
              if(candidates.length==0){
                 console.log(`[Delivery] No available delivery boys!`)
-                await order.save()
-                await emitEventHandler("order-status-update",{orderId:order._id,status:order.status})
+                order.status = "pending"
                 return NextResponse.json(
-                {message:"there is no available Delivery boys"},
-                {status:200}
-            )
+                    {message:"there is no available Delivery boys"},
+                    {status:400}
+                )
              }
    
              const deliveryAssignment=await DeliveryAssignment.create({

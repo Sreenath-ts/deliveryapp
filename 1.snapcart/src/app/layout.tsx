@@ -5,7 +5,8 @@ import "./globals.css";
 import Provider from "@/Provider";
 import StoreProvider from "@/redux/StoreProvider";
 import InitUser from "@/InitUser";
-import GlobalGeoUpdater from "@/components/GlobalGeoUpdater";
+import GlobalGeoUpdater from "@/components/GlobalGeoUpdater"
+import AdminNotificationBanner from "@/components/AdminNotificationBanner";
 
 
 
@@ -27,6 +28,7 @@ export default function RootLayout({
           <StoreProvider>
           <InitUser/>
           <GlobalGeoUpdater/>
+          <AdminNotificationBanner/>
         {children}
           </StoreProvider>
         </Provider>

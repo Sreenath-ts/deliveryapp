@@ -56,6 +56,14 @@ New users without a `mobile` or `role` are intercepted and shown `EditRoleMobile
 - Server → client events: API routes POST to `${NEXT_PUBLIC_SOCKET_SERVER}/notify` via `src/lib/emitEventHandler.ts`. This triggers events like `new-order` to broadcast to all connected delivery boys.
 - When a user connects, they emit `"identity"` with their `userId` so the socket server can map user → socketId.
 
+### Admin global notifications
+- `AdminNotificationBanner` is mounted in `src/app/layout.tsx` inside `StoreProvider`. It reads Redux `userData.role` and renders nothing unless the role is `"admin"`.
+- Listens globally for the `"new-order"` socket event so the admin receives alerts from any page, not just `/admin/manage-orders`.
+- On each new order, fires three things simultaneously:
+  1. **In-app toast** — slides in from the top-right, stacks if multiple orders arrive, auto-dismisses after 8s with a shrinking progress bar, has a manual dismiss button and a "View Orders →" link.
+  2. **Browser push notification** — uses the native `Notification` API. Permission is requested on component mount if not yet granted.
+  3. **Chime sound** — generated via `AudioContext` (two sine tones: 880 Hz → 660 Hz). No audio file required.
+
 ### Payments — Razorpay
 Flow for online payments:
 1. `POST /api/user/payment` — creates a Razorpay order + a DB Order with `paymentStatus: "pending"`.
@@ -69,8 +77,10 @@ Flow for online payments:
 ### Banner / Hero system
 - Two banner types: `image` (Cloudinary URL) and `text` (Tailwind gradient + text color).
 - Admins manage banners at `/admin/manage-banners`.
-- `HeroSection` fetches active banners from `/api/banners/get-active` and renders a full-screen animated slider with auto-play, swipe support, and a desktop slide panel.
-- Image banners use a split layout on desktop (content left, image right).
+- `HeroSection` fetches active banners from `/api/banners/get-active` and renders a full-width, full-bleed animated hero slider with auto-play and swipe support. No side panel — navigation is via centered dot indicators and always-visible prev/next arrows.
+- Image banners use a left-heavy gradient overlay. Text banners use `bgGradient` + `textColor`.
+- Each banner has an optional `buttonText` and optional `buttonLink`. If `buttonLink` is set the CTA renders as `<a target="_self">`; if omitted it scrolls to the products section; if `buttonText` is empty the CTA is hidden entirely.
+- Banner `order` field controls display sequence; `isActive` toggles visibility.
 
 ## Key data models
 
@@ -80,7 +90,7 @@ Flow for online payments:
 
 **DeliveryAssignment** — links an order to delivery boys. `brodcastedTo[]` tracks all boys who received the broadcast; `assignedTo` is who accepted. `status: "brodcasted" | "assigned" | "completed"`.
 
-**Banner** — `type: "image" | "text"`, `bgGradient` (Tailwind class string), `textColor: "white" | "dark"`, `badge` (e.g. "Flash Sale"), `order` (display order), `isActive`.
+**Banner** — `type: "image" | "text"`, `title`, `subtitle`, `buttonText` (optional), `buttonLink` (optional URL), `bgGradient` (CSS gradient string for text-type banners), `textColor: "white" | "dark"`, `badge` (e.g. "Flash Sale"), `order` (display order), `isActive`.
 
 ## Environment variables required
 

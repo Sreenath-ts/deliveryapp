@@ -44,16 +44,20 @@ interface IOrder {
 function AdminOrderCard({ order }: { order: IOrder }) {
     const [expanded, setExpanded] = useState(false)
     const [status, setStatus] = useState<string>("pending")
+    const [noDeliveryBoyError, setNoDeliveryBoyError] = useState<string | null>(null)
     const statusOptions = ["pending", "out of delivery"]
-    
-    const updateStatus = async (orderId: string, status: string) => {
+
+    const updateStatus = async (orderId: string, newStatus: string) => {
+        setNoDeliveryBoyError(null)
         try {
-            const result = await axios.post(`/api/admin/update-order-status/${orderId}`, { status })
+            const result = await axios.post(`/api/admin/update-order-status/${orderId}`, { status: newStatus })
             console.log(result.data)
-            setStatus(status)
-           
-        } catch (error) {
+            setStatus(newStatus)
+        } catch (error: any) {
             console.log(error)
+            if (error?.response?.status === 400) {
+                setNoDeliveryBoyError("⚠️ Cannot assign: No delivery boys are available nearby. Status not changed.")
+            }
         }
     }
 
@@ -141,14 +145,23 @@ function AdminOrderCard({ order }: { order: IOrder }) {
                         }`}>
                         {status}
                     </span>
-                   {status !="delivered" && <select className='border border-gray-300 rounded-lg px-3 py-1 text-sm shadow-sm hover:border-green-400 transition focus:ring-2 focus:ring-green-500 outline-none'
-                        value={status}
-                        onChange={(e) => updateStatus(order._id?.toString()!, e.target.value)}
-                    >
-                        {statusOptions.map(st => (
-                            <option key={st} value={st}>{st.toUpperCase()}</option>
-                        ))}
-                    </select>}
+                   {status !="delivered" && (
+                    <div className='flex flex-col items-end gap-1'>
+                        <select className='border border-gray-300 rounded-lg px-3 py-1 text-sm shadow-sm hover:border-green-400 transition focus:ring-2 focus:ring-green-500 outline-none'
+                            value={status}
+                            onChange={(e) => updateStatus(order._id?.toString()!, e.target.value)}
+                        >
+                            {statusOptions.map(st => (
+                                <option key={st} value={st}>{st.toUpperCase()}</option>
+                            ))}
+                        </select>
+                        {noDeliveryBoyError && (
+                            <p className='text-xs text-red-600 font-medium max-w-[200px] text-right leading-tight'>
+                                {noDeliveryBoyError}
+                            </p>
+                        )}
+                    </div>
+                   )}
                     
                 </div>
             </div>
