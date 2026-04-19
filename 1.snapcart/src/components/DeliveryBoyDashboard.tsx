@@ -21,7 +21,7 @@ const LiveMap = dynamic(() => import('./LiveMap'), {
     </div>
   )
 })
-import { Loader, MapPin, Package, TrendingUp, DollarSign, Clock } from 'lucide-react'
+import { Loader, MapPin, Package, TrendingUp, DollarSign, Clock, Navigation } from 'lucide-react'
 import { Bar, BarChart, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { motion } from 'motion/react'
 
@@ -444,9 +444,20 @@ function DeliveryBoyDashboard({ earning }: { earning: number }) {
           </div>
 
           {/* Map */}
-          <div className='rounded-2xl border-2 border-gray-200 shadow-2xl overflow-hidden mb-6'>
+          <div className='rounded-2xl border-2 border-gray-200 shadow-2xl overflow-hidden mb-4'>
             <LiveMap userLocation={userLocation} deliveryBoyLocation={deliveryBoyLocation} />
           </div>
+
+          {/* Open in Google Maps */}
+          <a
+            href={`https://www.google.com/maps/dir/?api=1&destination=${activeOrder.order.address.latitude},${activeOrder.order.address.longitude}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className='mb-6 flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all text-sm sm:text-base'
+          >
+            <Navigation className='w-5 h-5 flex-shrink-0' />
+            Open in Google Maps
+          </a>
 
           {/* Chat */}
           <div className='mb-6'>
