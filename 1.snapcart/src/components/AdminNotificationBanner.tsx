@@ -1,6 +1,7 @@
 'use client'
 
 import { getSocket } from '@/lib/socket'
+import { registerPushSubscription } from '@/lib/registerPushSubscription'
 import { RootState } from '@/redux/store'
 import { AnimatePresence, motion } from 'motion/react'
 import { ShoppingCart, X } from 'lucide-react'
@@ -59,12 +60,7 @@ function AdminNotificationBanner() {
     useEffect(() => {
         if (userData?.role !== 'admin') return
 
-        // Request browser notification permission
-        if (typeof window !== 'undefined' && 'Notification' in window) {
-            if (Notification.permission === 'default') {
-                Notification.requestPermission()
-            }
-        }
+        registerPushSubscription()
 
         const socket = getSocket()
 

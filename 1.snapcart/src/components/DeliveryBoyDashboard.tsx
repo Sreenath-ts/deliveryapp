@@ -1,5 +1,6 @@
 'use client'
 import { getSocket } from '@/lib/socket'
+import { registerPushSubscription } from '@/lib/registerPushSubscription'
 import { IDeliveryAssigment } from '@/models/deliveryAssignment.model'
 import { RootState } from '@/redux/store'
 import axios from 'axios'
@@ -79,9 +80,7 @@ function DeliveryBoyDashboard({ earning }: { earning: number }) {
 
   useEffect(() => {
     setMounted(true)
-    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission()
-    }
+    registerPushSubscription()
   }, [])
 
   const dismissAlert = () => {

@@ -5,6 +5,7 @@ import { motion } from "motion/react"
 import { ChevronDown, ChevronUp, CreditCard, MapPin, Package, Truck, UserCheck } from 'lucide-react'
 import Image from 'next/image'
 import { getSocket } from '@/lib/socket'
+import { registerPushSubscription } from '@/lib/registerPushSubscription'
 import { IUser } from '@/models/user.model'
 import { useRouter } from 'next/navigation'
 
@@ -78,9 +79,7 @@ function UserOrderCard({ order }: { order: IOrder }) {
     const router=useRouter()
 
     useEffect(() => {
-        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission()
-        }
+        registerPushSubscription()
     }, [])
     const getStatusColor = (status: string) => {
         switch (status) {

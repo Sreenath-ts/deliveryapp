@@ -1,5 +1,6 @@
 import connectDb from "@/lib/db";
 import emitEventHandler from "@/lib/emitEventHandler";
+import { sendWebPush } from "@/lib/sendWebPush";
 import DeliveryAssignment from "@/models/deliveryAssignment.model";
 import Order from "@/models/order.model";
 import User from "@/models/user.model";
@@ -65,6 +66,7 @@ export async function POST(req:NextRequest, context: { params: Promise<{ orderId
 
              await deliveryAssignment.populate("order");
              console.log(`[Delivery] Broadcasting assignment ${deliveryAssignment._id} to ${candidates.length} candidates`)
+             const shortOrderId = order._id?.toString().slice(-6).toUpperCase()
              for(const boyId of candidates){
                 const boy=await User.findById(boyId)
                 if(boy.socketId){
@@ -72,6 +74,13 @@ export async function POST(req:NextRequest, context: { params: Promise<{ orderId
                     await emitEventHandler("new-assignment",deliveryAssignment,boy.socketId)
                 } else {
                     console.log(`[Delivery] ${boy.name} has no socketId, skipping emit`)
+                }
+                if(boy.pushSubscription){
+                    await sendWebPush(boy.pushSubscription, {
+                        title: "New Assignment!",
+                        body: `Order #${shortOrderId} — ${order.address?.fullAddress ?? ''}`,
+                        url: "/",
+                    })
                 }
              }
 

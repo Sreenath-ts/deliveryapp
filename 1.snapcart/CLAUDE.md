@@ -40,7 +40,7 @@ New users without a `mobile` or `role` are intercepted and shown `EditRoleMobile
 ### Client-side user data — Redux
 `src/redux/store.ts` has two slices:
 - **`user`** (`userSlice`) — stores `userData` (the full DB user object). Populated by `InitUser` component (in root layout) which calls `/api/me` once the session is `authenticated`.
-- **`cart`** (`cartSlice`) — `cartData[]`, `subTotal`, `deliveryFee` (₹40, free above ₹100), `finalTotal`. Cart lives only in memory (no persistence).
+- **`cart`** (`cartSlice`) — `cartData[]`, `subTotal`, `deliveryFee` (₹40, free above ₹100), `finalTotal`. Cart lives only in memory (no persistence). `clearCart` reducer resets all fields; dispatched in `checkout/page.tsx` after both COD and Razorpay payment success.
 
 `StoreProvider` and `InitUser` are mounted in `src/app/layout.tsx` so Redux user data is available globally.
 
@@ -63,6 +63,26 @@ New users without a `mobile` or `role` are intercepted and shown `EditRoleMobile
   1. **In-app toast** — slides in from the top-right, stacks if multiple orders arrive, auto-dismisses after 8s with a shrinking progress bar, has a manual dismiss button and a "View Orders →" link.
   2. **Browser push notification** — uses the native `Notification` API. Permission is requested on component mount if not yet granted.
   3. **Chime sound** — generated via `AudioContext` (two sine tones: 880 Hz → 660 Hz). No audio file required.
+
+### Delivery boy notifications
+- `DeliveryBoyDashboard.tsx` listens for the `"new-assignment"` socket event and fires the same three notification channels (in-app toast, browser push, AudioContext chime) when a new assignment arrives.
+- The in-app toast is defined as a JSX variable (`assignmentBanner`) before the component's first early return and included in all three return paths via `<>` fragments.
+- Auto-dismisses after 8s; a `useRef` timer handle prevents multiple simultaneous timers.
+
+### User OTP notification
+- When a delivery boy requests an OTP, `POST /api/delivery/otp/send` emits `"otp-requested"` targeted to the user's `socketId` via `emitEventHandler` (third argument = socketId for targeted delivery).
+- `UserOrderCard.tsx` listens for `"otp-requested"`, matches by `orderId`, then fires the same three notification channels (in-app toast blue-themed with 🚚, browser push, chime). Auto-dismisses after 10s.
+
+### Order status — no delivery boy guard
+- `POST /api/admin/update-order-status/[orderId]`: when no available delivery boys are found (`candidates.length === 0`), resets `order.status = "pending"` and returns HTTP 400 without calling `order.save()`.
+- `AdminOrderCard.tsx` uses a non-optimistic update: `setStatus(newStatus)` is only called after a confirmed 2xx response. A 400 response shows an inline red error message below the dropdown (`noDeliveryBoyError` state).
+
+### Nav search suggestions
+- `Nav.tsx` fetches all groceries once on mount from `/api/admin/get-groceries` (user role only).
+- `filteredSuggestions` is derived via `useMemo`: case-insensitive match on `name` or `category`, deduped, max 6 results.
+- Dropdown closes on outside click (checked against both desktop and mobile container refs), Escape key, form submit, or suggestion click.
+- `onMouseDown={(e) => e.preventDefault()}` on each suggestion button prevents the blur-before-click race condition.
+- Mobile search container switches from `rounded-full` to `rounded-2xl` when suggestions are visible.
 
 ### Payments — Razorpay
 Flow for online payments:
