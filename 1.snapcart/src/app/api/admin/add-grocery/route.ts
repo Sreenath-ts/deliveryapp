@@ -19,13 +19,14 @@ export async function POST(req:NextRequest) {
     const category=formData.get("category") as string
       const unit=formData.get("unit") as string
     const price=formData.get("price") as string
+    const offerPrice=formData.get("offerPrice") as string
     const file=formData.get("image") as Blob | null
     let imageUrl
     if(file){
      imageUrl=await uploadOnCloudinary(file)
     }
     const grocery=await Grocery.create({
-        name,price,category,unit,image:imageUrl
+        name,price,offerPrice:offerPrice || null,category,unit,image:imageUrl
     })
      return NextResponse.json(
                 grocery,

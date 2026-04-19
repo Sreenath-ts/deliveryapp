@@ -1,5 +1,7 @@
 import connectDb from "@/lib/db";
+import emitEventHandler from "@/lib/emitEventHandler";
 import { sendMail } from "@/lib/mailer";
+import { sendWebPush } from "@/lib/sendWebPush";
 import Order from "@/models/order.model";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -24,6 +26,19 @@ export async function POST(req:NextRequest) {
         "Your Delivery OTP",
         `<h2>Your Delivery OTP is <strong>${otp}</strong></h2>`
     )
+
+       if (order.user.socketId) {
+           await emitEventHandler("otp-requested", { orderId: order._id }, order.user.socketId)
+       }
+
+       if (order.user.pushSubscription) {
+           await sendWebPush(order.user.pushSubscription, {
+               title: "Delivery Arrived!",
+               body: "Share your OTP with the delivery person.",
+               url: "/user/my-orders",
+           })
+       }
+
      return NextResponse.json(
             {message:"otp sent successfully"},
             {status:200}

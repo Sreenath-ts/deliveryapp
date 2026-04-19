@@ -14,22 +14,31 @@ function Login() {
     const [password,setPassword]=useState("")
     const [showPassword,setShowPassword]=useState(false)
     const [loading,setLoading]=useState(false)
+    const [error,setError]=useState("")
     const router=useRouter()
     const session=useSession()
     console.log(session)
     const handleLogin=async (e:FormEvent)=>{
         e.preventDefault()
         setLoading(true)
-try {
-   await signIn("credentials",{
-    email,password
-   }) 
-  
-   setLoading(false)
-} catch (error) {
-    console.log(error)
-    setLoading(false)
-}
+        setError("")
+        try {
+           const res = await signIn("credentials",{
+            email,password,redirect:false,callbackUrl:"/"
+           }) 
+          
+           if(res?.error){
+               setError("Invalid email or password")
+               setLoading(false)
+           } else if (res?.ok) {
+               router.push("/")
+               router.refresh()
+           }
+        } catch (error) {
+            console.log(error)
+            setError("Something went wrong")
+            setLoading(false)
+        }
     }
   return (
     <div className='flex flex-col items-center justify-center min-h-screen px-6 py-10 bg-white relative'>
@@ -60,6 +69,7 @@ try {
         duration:0.6
       }} className='flex flex-col gap-5 w-full max-w-sm'>
 
+        {error && <p className='text-red-500 text-sm font-medium text-center bg-red-50 py-2 rounded-lg border border-red-100'>{error}</p>}
         
         <div className='relative'>
         <Mail className='absolute left-3 top-3.5 w-5 h-5 text-gray-400'/>
@@ -93,7 +103,7 @@ try {
     })()
 }
 
-<div className='flex items-center gap-2 text-gray-400 text-sm mt-2'>
+{/* <div className='flex items-center gap-2 text-gray-400 text-sm mt-2'>
     <span className='flex-1 h-px bg-gray-200'></span>
     OR
     <span className='flex-1 h-px bg-gray-200'></span>
@@ -102,7 +112,7 @@ try {
 <div className='w-full flex items-center justify-center gap-3 border border-gray-300 hover:bg-gray-50 py-3 rounded-xl text-gray-700 font-medium transition-all duration-200' onClick={()=>signIn("google",{callbackUrl:"/"})}>
     <Image src={googleImage} width={20} height={20} alt='google'/>
     Continue with Google
-</div>
+</div> */}
  
        </motion.form>
 

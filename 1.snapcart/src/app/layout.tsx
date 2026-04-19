@@ -5,6 +5,8 @@ import "./globals.css";
 import Provider from "@/Provider";
 import StoreProvider from "@/redux/StoreProvider";
 import InitUser from "@/InitUser";
+import GlobalGeoUpdater from "@/components/GlobalGeoUpdater"
+import AdminNotificationBanner from "@/components/AdminNotificationBanner";
 
 
 
@@ -24,9 +26,9 @@ export default function RootLayout({
       <body className="w-full min-h-screen bg-linear-to-b from-green-50 to-white">
         <Provider>
           <StoreProvider>
-          
-        <InitUser/>
-        
+          <InitUser/>
+          <GlobalGeoUpdater/>
+          <AdminNotificationBanner/>
         {children}
           </StoreProvider>
         </Provider>

@@ -5,6 +5,7 @@ export interface IGrocery {
     name: string,
     category: string,
     price: string,
+    offerPrice?: string,
     unit: string,
     image: string,
     createdAt?: Date,
@@ -18,26 +19,17 @@ const grocerySchema = new mongoose.Schema<IGrocery>({
     },
     category: {
         type: String,
-        enum: [
-            "Fruits & Vegetables",
-            "Dairy & Eggs",
-            "Rice, Atta & Grains",
-            "Snacks & Biscuits",
-            "Spices & Masalas",
-            "Beverages & Drinks",
-            "Personal Care",
-            "Household Essentials",
-            "Instant & Packaged Food",
-            "Baby & Pet Care"
-        ],
         required: true
     },
     price: {
         type: String,
         required: true
 
-    }
-    ,
+    },
+    offerPrice: {
+        type: String,
+        default: null
+    },
     unit: {
         type: String,
         required: true,

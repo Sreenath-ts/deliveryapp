@@ -13,12 +13,14 @@ import Grocery, { IGrocery } from '@/models/grocery.model'
 import User from '@/models/user.model'
 
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
 
 
 
 async function Home(props:{
   searchParams:Promise<{
-    q:string
+    q:string,
+    category:string
   }>
 }) {
 
@@ -41,28 +43,27 @@ const searchParams=await props.searchParams
 let groceryList:IGrocery[]=[]
 
 if(user.role==="user"){
+  const query: Record<string, any> = {}
   if(searchParams.q){
-    groceryList=await Grocery.find({
-     $or:[
-      { name: { $regex: searchParams?.q || "", $options: "i" } },
-    { category: { $regex: searchParams?.q || "", $options: "i" } },
-     ]
-    })
-  }else{
-    groceryList=await Grocery.find({})
-     
-
+    query.$or = [
+      { name: { $regex: searchParams.q, $options: "i" } },
+      { category: { $regex: searchParams.q, $options: "i" } },
+    ]
   }
+  if(searchParams.category){
+    query.category = searchParams.category
+  }
+  groceryList=await Grocery.find(query)
 }
 
 
 
   return (
     <>
-      <Nav user={plainUser} />
+      <Suspense fallback={null}><Nav user={plainUser} /></Suspense>
       <GeoUpdater userId={plainUser._id}/>
       {user.role == "user" ? (
-        <UserDashboard groceryList={groceryList}/>
+        <UserDashboard groceryList={groceryList} selectedCategory={searchParams.category || null} searchQuery={searchParams.q || null}/>
       ) : user.role == "admin" ? (
         <AdminDashboard />
       ) : <DeliveryBoy />}

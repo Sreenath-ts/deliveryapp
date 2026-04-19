@@ -20,14 +20,24 @@ export async function POST(req:NextRequest) {
     const category=formData.get("category") as string
       const unit=formData.get("unit") as string
     const price=formData.get("price") as string
+    const offerPrice=formData.get("offerPrice") as string
     const file=formData.get("image") as Blob | null
     let imageUrl
     if(file){
      imageUrl=await uploadOnCloudinary(file)
     }
-    const grocery=await Grocery.findByIdAndUpdate(groceryId,{
-        name,price,category,unit,image:imageUrl
-    })
+    const updateData: any = {
+        name,price,category,unit
+    }
+    if(offerPrice){
+        updateData.offerPrice = offerPrice
+    } else {
+        updateData.offerPrice = null
+    }
+    if(imageUrl){
+        updateData.image = imageUrl
+    }
+    const grocery=await Grocery.findByIdAndUpdate(groceryId,updateData)
      return NextResponse.json(
                 grocery,
                 {status:200}

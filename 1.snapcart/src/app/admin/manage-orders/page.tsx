@@ -50,7 +50,7 @@ function ManageOrders() {
             const result=await axios.get("/api/admin/get-orders")
             setOrders(result.data)
         } catch (error) {
-           console.log(error) 
+           console.log(error)
         }
       }
       getOrders()

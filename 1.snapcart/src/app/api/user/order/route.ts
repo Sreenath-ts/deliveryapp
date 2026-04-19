@@ -1,5 +1,6 @@
 import connectDb from "@/lib/db";
 import emitEventHandler from "@/lib/emitEventHandler";
+import { sendWebPush } from "@/lib/sendWebPush";
 import Order from "@/models/order.model";
 import User from "@/models/user.model";
 import { NextRequest, NextResponse } from "next/server";
@@ -31,7 +32,19 @@ export async function POST(req: NextRequest) {
         })
 
 
-        await emitEventHandler("new-order",newOrder)
+        await emitEventHandler("new-order", newOrder)
+
+        const admins = await User.find({ role: "admin", pushSubscription: { $ne: null } })
+        const shortId = newOrder._id?.toString().slice(-6).toUpperCase()
+        await Promise.all(
+            admins.map((admin) =>
+                sendWebPush(admin.pushSubscription, {
+                    title: "New Order!",
+                    body: `Order #${shortId} — ₹${newOrder.totalAmount}`,
+                    url: "/admin/manage-orders",
+                })
+            )
+        )
 
         return NextResponse.json(
             newOrder,

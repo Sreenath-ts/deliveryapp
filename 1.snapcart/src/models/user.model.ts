@@ -21,7 +21,7 @@ export interface IUser{
 },
 socketId:string | null
 isOnline:Boolean
-  
+pushSubscription?: object
 }
 
 const userSchema=new mongoose.Schema<IUser>({
@@ -69,6 +69,10 @@ socketId:{
 isOnline:{
     type:Boolean,
     default:false
+},
+pushSubscription:{
+    type:Object,
+    default:null
 }
 
 },{timestamps:true})
